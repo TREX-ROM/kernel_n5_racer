@@ -530,10 +530,6 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	mutex_unlock(&panel_cmd_mutex);
 
 
-#ifdef CONFIG_PWRKEY_SUSPEND
-	pwrkey_pressed = false;	
-#endif
-		
 	pr_info("%s\n", __func__);
 
 	return 0;
