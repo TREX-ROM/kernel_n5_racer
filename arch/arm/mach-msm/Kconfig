@@ -3073,7 +3073,6 @@ config MSM_LIMITER
 	  to desired value on suspend/resume
 
 
-
 config ALUCARD_HOTPLUG
 	bool "Enable alucard-hotplug cpu hotplug driver"
 	default n
@@ -3088,5 +3087,13 @@ config MSM_SLEEPER
 	  Limit max frequency and shut off cores while screen is off 
 
 
+
+config FORCE_FAST_CHARGE
+	bool "Force AC charge mode at will"
+	depends on BQ24192_CHARGER
+	default y
+	help
+	  A simple sysfs interface to force adapters that
+	  are detected as USB to charge as AC.
 
 endif
