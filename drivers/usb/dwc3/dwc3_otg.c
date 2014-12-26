@@ -13,6 +13,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/module.h>
 #include <linux/usb.h>
 #include <linux/usb/hcd.h>
 #include <linux/platform_device.h>
