@@ -780,7 +780,7 @@ static struct global_attr hispeed_freq_attr = __ATTR(hispeed_freq, 0644,
 
 
 
-	ret = strict_strtoul(buf, 0, &val);
+	ret = kstrtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
 	max_freq_hysteresis = val;
@@ -805,7 +805,7 @@ static ssize_t store_align_windows(struct kobject *kobj,
 	int ret;
 	unsigned long val;
 
-	ret = strict_strtoul(buf, 0, &val);
+	ret = kstrtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
 	align_windows = val;
@@ -850,7 +850,7 @@ static ssize_t store_above_hispeed_delay(struct kobject *kobj,
 	int ret;
 	unsigned long val;
 
-	ret = strict_strtoul(buf, 0, &val);
+	ret = kstrtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
 	above_hispeed_delay_val = val;
@@ -871,7 +871,7 @@ static ssize_t store_timer_rate(struct kobject *kobj,
 	int ret;
 	unsigned long val;
 
-	ret = strict_strtoul(buf, 0, &val);
+	ret = kstrtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
 	timer_rate = val;
