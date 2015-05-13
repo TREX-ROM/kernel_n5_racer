@@ -13,15 +13,7 @@
 #include <linux/smp.h>
 #include <linux/cpu.h>
 
-#ifdef CONFIG_USE_GENERIC_SMP_HELPERS
-static struct {
-	struct list_head	queue;
-	raw_spinlock_t		lock;
-} call_function __cacheline_aligned_in_smp =
-	{
-		.queue		= LIST_HEAD_INIT(call_function.queue),
-		.lock		= __RAW_SPIN_LOCK_UNLOCKED(call_function.lock),
-	};
+#include "smpboot.h"
 
 #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
 static struct {
