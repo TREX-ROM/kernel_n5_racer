@@ -595,29 +595,6 @@ static unsigned short tx_digital_gain_reg[] = {
 };
 
 
-static int taiko_get_sample_rate(struct snd_soc_codec *codec, int path)
-{
-	return snd_soc_read(codec,
-		(TAIKO_A_CDC_RX1_B5_CTL + 8 * (path - 1)));
-}
-
-static int taiko_compare_bit_format(struct snd_soc_codec *codec,
-			       int bit_format)
-{
-	int i = 0;
-	int ret = 0;
-	struct taiko_priv *taiko_p = snd_soc_codec_get_drvdata(codec);
-
-	for (i = 0; i < NUM_CODEC_DAIS; i++) {
-		if (taiko_p->dai[i].bit_width == bit_format) {
-			ret = 1;
-			break;
-		}
-	}
-	return ret;
-}
-
-
 static int spkr_drv_wrnd_param_set(const char *val,
 				   const struct kernel_param *kp)
 {
