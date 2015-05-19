@@ -617,21 +617,6 @@ static int taiko_compare_bit_format(struct snd_soc_codec *codec,
 	return ret;
 }
 
-static int taiko_update_uhqa_mode(struct snd_soc_codec *codec, int path)
-{
-	struct taiko_priv *taiko_p = snd_soc_codec_get_drvdata(codec);
-
-	/* Enable UHQA path if fs >= 96KHz or bit=24 bit */
-	if (((taiko_get_sample_rate(codec, path) & 0xE0) >= 0xA0) ||
-		(taiko_compare_bit_format(codec, 24))) {
-		taiko_p->uhqa_mode = 1;
-	} else {
-		taiko_p->uhqa_mode = 0;
-	}
-	dev_dbg(codec->dev, "%s: uhqa_mode=%d", __func__, taiko_p->uhqa_mode);
-	return 0;
-}
-
 
 static int spkr_drv_wrnd_param_set(const char *val,
 				   const struct kernel_param *kp)
