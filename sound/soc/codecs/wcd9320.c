@@ -509,6 +509,9 @@ struct taiko_priv {
 
 	int (*machine_codec_event_cb)(struct snd_soc_codec *codec,
 			enum wcd9xxx_codec_event);
+
+		/* UHQA (class AB) mode */
+	u8 uhqa_mode;
 };
 
 static const u32 comp_shift[] = {
