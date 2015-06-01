@@ -2152,7 +2152,6 @@ static struct android_usb_function *supported_functions[] = {
 #ifdef CONFIG_SND_PCM
 	&audio_source_function,
 #endif
-	&midi_function,
 	&uasp_function,
 	&hid_function,
 	NULL
