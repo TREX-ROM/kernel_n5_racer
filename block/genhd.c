@@ -427,7 +427,7 @@ int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
 			rc = -EBUSY;
 		}
 
-		mutex_unlock(&ext_devt_mutex);
+		spin_unlock(&ext_devt_lock);
 
 	} while (rc == -EAGAIN);
 
