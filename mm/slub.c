@@ -1879,77 +1879,45 @@ redo:
 /* Unfreeze all the cpu partial slabs */
 static void unfreeze_partials(struct kmem_cache *s)
 {
-	struct kmem_cache_node *n = NULL;
+	struct kmem_cache_node *n = NULL, *n2 = NULL;
 	struct kmem_cache_cpu *c = this_cpu_ptr(s->cpu_slab);
 	struct page *page, *discard_page = NULL;
-
 	while ((page = c->partial)) {
 		enum slab_modes { M_PARTIAL, M_FREE };
 		enum slab_modes l, m;
 		struct page new;
 		struct page old;
-
 		c->partial = page->next;
-		l = M_FREE;
-
+		n2 = get_node(s, page_to_nid(page));
+		if (n != n2) {
+			if (n)
+				spin_unlock(&n->list_lock);
+			n = n2;
+			spin_lock(&n->list_lock);
+		}
 		do {
-
 			old.freelist = page->freelist;
 			old.counters = page->counters;
 			VM_BUG_ON(!old.frozen);
-
 			new.counters = old.counters;
 			new.freelist = old.freelist;
-
 			new.frozen = 0;
-
-			if (!new.inuse && (!n || n->nr_partial > s->min_partial))
-				m = M_FREE;
-			else {
-				struct kmem_cache_node *n2 = get_node(s,
-							page_to_nid(page));
-
-				m = M_PARTIAL;
-				if (n != n2) {
-					if (n)
-						spin_unlock(&n->list_lock);
-
-					n = n2;
-					spin_lock(&n->list_lock);
-				}
-			}
-
-			if (l != m) {
-				if (l == M_PARTIAL) {
-					remove_partial(n, page);
-					stat(s, FREE_REMOVE_PARTIAL);
-				} else {
-					add_partial(n, page,
-						DEACTIVATE_TO_TAIL);
-					stat(s, FREE_ADD_PARTIAL);
-				}
-
-				l = m;
-			}
 
 		} while (!cmpxchg_double_slab(s, page,
 				old.freelist, old.counters,
 				new.freelist, new.counters,
 				"unfreezing slab"));
 
-		if (m == M_FREE) {
+		if (unlikely(!new.inuse && n->nr_partial > s->min_partial)) {
 			page->next = discard_page;
 			discard_page = page;
 		}
 	}
-
 	if (n)
 		spin_unlock(&n->list_lock);
-
 	while (discard_page) {
 		page = discard_page;
 		discard_page = discard_page->next;
-
 		stat(s, DEACTIVATE_EMPTY);
 		discard_slab(s, page);
 		stat(s, FREE_SLAB);
@@ -1970,12 +1938,10 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
 	struct page *oldpage;
 	int pages;
 	int pobjects;
-
 	do {
 		pages = 0;
 		pobjects = 0;
 		oldpage = this_cpu_read(s->cpu_slab->partial);
-
 		if (oldpage) {
 			pobjects = oldpage->pobjects;
 			pages = oldpage->pages;
@@ -1993,24 +1959,19 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
 				stat(s, CPU_PARTIAL_DRAIN);
 			}
 		}
-
 		pages++;
 		pobjects += page->objects - page->inuse;
-
 		page->pages = pages;
 		page->pobjects = pobjects;
 		page->next = oldpage;
-
 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
 	return pobjects;
 }
-
 static inline void flush_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
 {
 	stat(s, CPUSLAB_FLUSH);
 	deactivate_slab(s, c);
 }
-
 /*
  * Flush cpu slab.
  *
@@ -2019,14 +1980,13 @@ static inline void flush_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
 static inline void __flush_cpu_slab(struct kmem_cache *s, int cpu)
 {
 	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
-
 	if (likely(c)) {
 		if (c->page)
 			flush_slab(s, c);
-
 		unfreeze_partials(s);
 	}
 }
+
 
 static void flush_cpu_slab(void *d)
 {
