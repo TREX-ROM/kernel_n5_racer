@@ -998,8 +998,7 @@ static int kgsl_iommu_init_sync_lock(struct kgsl_mmu *mmu)
  *
  * Return - int - number of commands.
  */
-inline unsigned int kgsl_iommu_sync_lock(struct kgsl_mmu *mmu,
-						unsigned int *cmds)
+unsigned int kgsl_iommu_sync_lock(struct kgsl_mmu *mmu, unsigned int *cmds)
 {
 	struct kgsl_device *device = mmu->device;
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
@@ -1068,8 +1067,8 @@ inline unsigned int kgsl_iommu_sync_lock(struct kgsl_mmu *mmu,
  *
  * Return - int - number of commands.
  */
-inline unsigned int kgsl_iommu_sync_unlock(struct kgsl_mmu *mmu,
-					unsigned int *cmds)
+
+unsigned int kgsl_iommu_sync_unlock(struct kgsl_mmu *mmu, unsigned int *cmds)
 {
 	struct kgsl_device *device = mmu->device;
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
