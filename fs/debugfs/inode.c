@@ -252,6 +252,7 @@ static const struct super_operations debugfs_super_operations = {
 	.statfs		= simple_statfs,
 	.remount_fs	= debugfs_remount,
 	.show_options	= debugfs_show_options,
+	.evict_inode	= debugfs_evict_inode,
 };
 
 static int debug_fill_super(struct super_block *sb, void *data, int silent)
