@@ -200,6 +200,7 @@ static struct attribute * kernel_attrs[] = {
 	&kexec_crash_loaded_attr.attr,
 	&kexec_crash_size_attr.attr,
 	&vmcoreinfo_attr.attr,
+	&rcu_expedited_attr.attr,
 #endif
 	NULL
 };
