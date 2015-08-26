@@ -233,7 +233,7 @@ static void darkness_check_cpu(struct cpufreq_darkness_cpuinfo *this_darkness_cp
 	/*min_freq = atomic_read(&min_freq_limit[cpu]);
 	max_freq = atomic_read(&max_freq_limit[cpu]);*/
 
-	if (!cpu_policy)
+	if (!cpu_policy || cpu_policy == NULL)
 		return;
 
 	/*printk(KERN_ERR "TIMER CPU[%u], wall[%u], idle[%u]\n",cpu, wall_time, idle_time);*/
