@@ -3032,7 +3032,37 @@ config HAS_MACH_MEMUTILS
 	bool "Motorola MSM memcpy enhancements"
 	help
 	Faster memcpy performance for Krait
-endif
+
+config MSM_LIMITER
+	bool "MSM Frequency Limiter Driver"
+	default y
+	help
+	  The MSM Frequency Limiter Driver controls max frequency limit for each CPU
+	  to desired value on suspend/resume
+
+
+config MSM_CPU_VOLTAGE_CONTROL
+	bool "Userspace CPU Voltage Control"
+	default y
+	help
+	  This enables userspace CPU Voltage Control.
+
+
+config FORCE_FAST_CHARGE
+	bool "Force AC charge mode at will"
+	depends on BQ24192_CHARGER
+	default y
+	help
+	  A simple sysfs interface to force adapters that
+	  are detected as USB to charge as AC.
+
+
+config MSM_SLEEPER
+	bool "CPU hotplug driver"
+	default y
+	help
+	  CPU hotplug driver 
+
 
 config KERNEL_TEXT_MPU_PROT
         bool "Enable xpu protection of kernel r/o sections"
@@ -3041,3 +3071,6 @@ config KERNEL_TEXT_MPU_PROT
           sections early in boot. Read access is permitted to
           all masters; Write access is only permited to the
           secure world.
+endif
+
+
