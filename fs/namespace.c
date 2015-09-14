@@ -728,48 +728,36 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
 	mnt = alloc_vfsmnt(old->mnt_devname);
 	if (!mnt)
 		return ERR_PTR(-ENOMEM);
+		mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
+		atomic_inc(&sb->s_active);
+		mnt->mnt.mnt_sb = sb;
+		mnt->mnt.mnt_root = dget(root);
+		mnt->mnt_mountpoint = mnt->mnt.mnt_root;
+		mnt->mnt_parent = mnt;
+		br_write_lock(&vfsmount_lock);
+		list_add_tail(&mnt->mnt_instance, &sb->s_mounts);
+		br_write_unlock(&vfsmount_lock);
 
-	if (flag & (CL_SLAVE | CL_PRIVATE | CL_SHARED_TO_SLAVE))
-		mnt->mnt_group_id = 0; /* not a peer of original */
-	else
-		mnt->mnt_group_id = old->mnt_group_id;
+		if (flag & CL_SLAVE) {
+			list_add(&mnt->mnt_slave, &old->mnt_slave_list);
+			mnt->mnt_master = old;
+			CLEAR_MNT_SHARED(mnt);
+		} else if (!(flag & CL_PRIVATE)) {
+			if ((flag & CL_MAKE_SHARED) || IS_MNT_SHARED(old))
+				list_add(&mnt->mnt_share, &old->mnt_share);
+			if (IS_MNT_SLAVE(old))
+				list_add(&mnt->mnt_slave, &old->mnt_slave);
+			mnt->mnt_master = old->mnt_master;
+		}
+		if (flag & CL_MAKE_SHARED)
+			set_mnt_shared(mnt);
 
-	if ((flag & CL_MAKE_SHARED) && !mnt->mnt_group_id) {
-		err = mnt_alloc_group_id(mnt);
-		if (err)
-			goto out_free;
-	}
-
-	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
-	atomic_inc(&sb->s_active);
-	mnt->mnt.mnt_sb = sb;
-	mnt->mnt.mnt_root = dget(root);
-	mnt->mnt_mountpoint = mnt->mnt.mnt_root;
-	mnt->mnt_parent = mnt;
-	br_write_lock(&vfsmount_lock);
-	list_add_tail(&mnt->mnt_instance, &sb->s_mounts);
-	br_write_unlock(&vfsmount_lock);
-
-	if ((flag & CL_SLAVE) ||
-	    ((flag & CL_SHARED_TO_SLAVE) && IS_MNT_SHARED(old))) {
-		list_add(&mnt->mnt_slave, &old->mnt_slave_list);
-		mnt->mnt_master = old;
-		CLEAR_MNT_SHARED(mnt);
-	} else if (!(flag & CL_PRIVATE)) {
-		if ((flag & CL_MAKE_SHARED) || IS_MNT_SHARED(old))
-			list_add(&mnt->mnt_share, &old->mnt_share);
-		if (IS_MNT_SLAVE(old))
-			list_add(&mnt->mnt_slave, &old->mnt_slave);
-		mnt->mnt_master = old->mnt_master;
-	}
-	if (flag & CL_MAKE_SHARED)
-		set_mnt_shared(mnt);
-
-	/* stick the duplicate mount on the same expiry list
-	 * as the original if that was on one */
-	if (flag & CL_EXPIRE) {
-		if (!list_empty(&old->mnt_expire))
-			list_add(&mnt->mnt_expire, &old->mnt_expire);
+		/* stick the duplicate mount on the same expiry list
+		 * as the original if that was on one */
+		if (flag & CL_EXPIRE) {
+			if (!list_empty(&old->mnt_expire))
+				list_add(&mnt->mnt_expire, &old->mnt_expire);
+		}
 	}
 
 	return mnt;
@@ -806,8 +794,7 @@ static void mntput_no_expire(struct mount *mnt)
 put_again:
 #ifdef CONFIG_SMP
 	br_read_lock(&vfsmount_lock);
-	if (likely(mnt->mnt_ns)) {
-		/* shouldn't be the last one */
+	if (likely(atomic_read(&mnt->mnt_longterm))) {
 		mnt_add_count(mnt, -1);
 		br_read_unlock(&vfsmount_lock);
 		return;
@@ -1070,6 +1057,9 @@ void umount_tree(struct mount *mnt, int propagate, struct list_head *kill)
 	for (p = mnt; p; p = next_mnt(p, mnt))
 		list_move(&p->mnt_hash, &tmp_list);
 
+	list_for_each_entry(p, &tmp_list, mnt_hash)
+		list_del_init(&p->mnt_child);
+
 	if (propagate)
 		propagate_umount(&tmp_list);
 
@@ -1077,8 +1067,10 @@ void umount_tree(struct mount *mnt, int propagate, struct list_head *kill)
 		list_del_init(&p->mnt_expire);
 		list_del_init(&p->mnt_list);
 		__touch_mnt_namespace(p->mnt_ns);
+		if (p->mnt_ns)
+			__mnt_make_shortterm(p);
 		p->mnt_ns = NULL;
-		list_del_init(&p->mnt_child);
+
 		if (mnt_has_parent(p)) {
 			p->mnt_parent->mnt_ghosts++;
 			dentry_reset_mounted(p->mnt_mountpoint);
@@ -1308,8 +1300,9 @@ struct mount *copy_tree(struct mount *mnt, struct dentry *dentry,
 			path.mnt = &q->mnt;
 			path.dentry = p->mnt_mountpoint;
 			q = clone_mnt(p, p->mnt.mnt_root, flag);
-			if (IS_ERR(q))
-				goto out;
+
+			if (!q)
+				goto Enomem;
 			br_write_lock(&vfsmount_lock);
 			list_add_tail(&q->mnt_list, &res->mnt_list);
 			attach_mnt(q, &path);
@@ -1711,7 +1704,7 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
 		err = do_remount_sb(sb, flags, data, 0);
 	if (!err) {
 		br_write_lock(&vfsmount_lock);
-		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
+		mnt_flags |= mnt->mnt.mnt_flags & ~MNT_USER_SETTABLE_MASK;
 		mnt->mnt.mnt_flags = mnt_flags;
 		br_write_unlock(&vfsmount_lock);
 	}
@@ -2281,6 +2274,26 @@ static struct mnt_namespace *alloc_mnt_ns(struct user_namespace *user_ns)
 	return new_ns;
 }
 
+
+
+void mnt_make_longterm(struct vfsmount *mnt)
+{
+	__mnt_make_longterm(real_mount(mnt));
+}
+
+void mnt_make_shortterm(struct vfsmount *m)
+{
+#ifdef CONFIG_SMP
+	struct mount *mnt = real_mount(m);
+	if (atomic_add_unless(&mnt->mnt_longterm, -1, 1))
+		return;
+	br_write_lock(&vfsmount_lock);
+	atomic_dec(&mnt->mnt_longterm);
+	br_write_unlock(&vfsmount_lock);
+#endif
+}
+
+
 /*
  * Allocate a new namespace structure and populate it with contents
  * copied from the namespace of the passed in task structure.
@@ -2416,9 +2429,9 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 		char __user *, type, unsigned long, flags, void __user *, data)
 {
 	int ret;
-	char *kernel_type;
-	char *kernel_dir;
-	char *kernel_dev;
+	char *kernel_type = NULL;
+	char *kernel_dir = NULL;
+	char *kernel_dev = NULL;
 	unsigned long data_page;
 
 	ret = copy_mount_string(type, &kernel_type);
@@ -2560,6 +2573,11 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
 	/* make sure we can reach put_old from new_root */
 	if (!is_path_reachable(real_mount(old.mnt), old.dentry, &new))
 		goto out4;
+
+	/* make certain new is below the root */
+	if (!is_path_reachable(new_mnt, new.dentry, &root))
+		goto out4;
+
 	br_write_lock(&vfsmount_lock);
 	detach_mnt(new_mnt, &parent_path);
 	detach_mnt(root_mnt, &root_parent);
