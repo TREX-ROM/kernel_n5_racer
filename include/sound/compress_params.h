@@ -380,18 +380,18 @@ union snd_codec_options {
  */
 
 struct snd_codec_desc {
-	__u32 max_ch;
-	__u32 sample_rates[MAX_NUM_SAMPLE_RATES];
-	__u32 num_sample_rates;
-	__u32 bit_rate[MAX_NUM_BITRATES];
-	__u32 num_bitrates;
-	__u32 rate_control;
-	__u32 profiles;
-	__u32 modes;
-	__u32 formats;
-	__u32 min_buffer;
-	__u32 reserved[15];
-};
+        __u32 max_ch;
+        __u32 sample_rates[MAX_NUM_SAMPLE_RATES];
+        __u32 num_sample_rates;
+        __u32 bit_rate[MAX_NUM_BITRATES];
+        __u32 num_bitrates;
+        __u32 rate_control;
+        __u32 profiles;
+        __u32 modes;
+        __u32 formats;
+        __u32 min_buffer;
+        __u32 reserved[15];
+} __attribute__((packed, aligned(4)));
 
 /** struct snd_codec
  * @id: Identifies the supported audio encoder/decoder.
