@@ -609,12 +609,6 @@ int store_voice_col_data(uint32_t vocproc_type, uint32_t cal_size,
 		result = -EINVAL;
 		goto done;
 	}
-	if (acdb_data.col_data[vocproc_type] == NULL) {
-		pr_err("%s: vocproc_type %d data not allocated!\n",
-			__func__, vocproc_type);
-		result = -EINVAL;
-		goto done;
-	}
 	if (copy_from_user(acdb_data.col_data[vocproc_type],
 			(void *)((uint8_t *)cal_block + sizeof(cal_size)),
 			cal_size)) {
@@ -931,44 +925,10 @@ static int acdb_open(struct inode *inode, struct file *f)
 	if (acdb_data.mem_len)
 		pr_debug("%s: ACDB opened but memory allocated, using existing allocation!\n",
 			__func__);
-
 	acdb_data.valid_adm_custom_top = 1;
 	acdb_data.valid_asm_custom_top = 1;
 	acdb_data.usage_count++;
 	mutex_unlock(&acdb_data.acdb_mutex);
-
-	return result;
-}
-
-static void deallocate_col_data(void)
-{
-	int	i;
-
-	for (i = 0; i < MAX_VOCPROC_TYPES; i++) {
-		kfree(acdb_data.col_data[i]);
-		acdb_data.col_data[i] = NULL;
-	}
-}
-
-static int allocate_col_data(void)
-{
-	int	result = 0;
-	int	i;
-
-	for (i = 0; i < MAX_VOCPROC_TYPES; i++) {
-		acdb_data.col_data[i] = kmalloc(MAX_COL_SIZE, GFP_KERNEL);
-		if (acdb_data.col_data[i] == NULL) {
-			pr_err("%s: kmalloc column data failed, type = %d\n",
-				__func__, i);
-			deallocate_col_data();
-			result = -ENOMEM;
-			goto done;
-		}
-		acdb_data.vocproc_col_cal[i].cal_kvaddr =
-			(uint32_t)acdb_data.col_data[i];
-	}
-
-done:
 	return result;
 }
 
@@ -1032,15 +992,15 @@ static int deregister_memory(void)
 		pr_err("%s: unmap_cal_tables failed, err = %d\n",
 			__func__, result);
 
-		for (i = 0; i < MAX_VOCPROC_TYPES; i++) {
-			kfree(acdb_data.col_data[i]);
-			acdb_data.col_data[i] = NULL;
-		}
-		msm_audio_ion_free(acdb_data.ion_client, acdb_data.ion_handle);
-		acdb_data.ion_client = NULL;
-		acdb_data.ion_handle = NULL;
-		mutex_unlock(&acdb_data.acdb_mutex);
+	msm_audio_ion_free(acdb_data.ion_client, acdb_data.ion_handle);
+	acdb_data.ion_client = NULL;
+	acdb_data.ion_handle = NULL;
+
+	for (i = 0; i < MAX_VOCPROC_TYPES; i++) {
+		kfree(acdb_data.col_data[i]);
+		acdb_data.col_data[i] = NULL;
 	}
+done:
 	return result;
 }
 
@@ -1053,12 +1013,6 @@ static int register_memory(void)
 	unsigned long		mem_len;
 	pr_debug("%s\n", __func__);
 
-	result = allocate_col_data();
-	if (result) {
-		pr_err("%s: allocate_hw_delay_entries failed, rc = %d\n",
-			__func__, result);
-		goto err_done;
-	}
 
 	result = msm_audio_ion_import("audio_acdb_client",
 				&acdb_data.ion_client,
@@ -1069,7 +1023,13 @@ static int register_memory(void)
 	if (result) {
 		pr_err("%s: audio ION alloc failed, rc = %d\n",
 			__func__, result);
-		goto err_col;
+		goto err_ion_handle;
+	}
+
+	for (i = 0; i < MAX_VOCPROC_TYPES; i++) {
+		acdb_data.col_data[i] = kmalloc(MAX_COL_SIZE, GFP_KERNEL);
+		acdb_data.vocproc_col_cal[i].cal_kvaddr =
+			(uint32_t)acdb_data.col_data[i];
 	}
 
 	kvaddr = (unsigned long)kvptr;
@@ -1083,8 +1043,7 @@ static int register_memory(void)
 
 	return result;
 err_ion_handle:
-	atomic64_set(&acdb_data.mem_len, 0);
-	mutex_unlock(&acdb_data.acdb_mutex);
+	acdb_data.mem_len = 0;
 	return result;
 }
 static long acdb_ioctl(struct file *f,
