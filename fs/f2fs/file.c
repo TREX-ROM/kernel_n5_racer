@@ -697,7 +697,9 @@ int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
 			 * do not trim all blocks after i_size if target size is
 			 * larger than i_size.
 			 */
+
 			truncate_setsize(inode, attr->ia_size);
+			inode->i_mtime = inode->i_ctime = CURRENT_TIME;
 		}
 	}
 
