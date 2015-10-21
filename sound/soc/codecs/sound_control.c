@@ -238,6 +238,21 @@ int snd_hax_reg_access(unsigned int reg)
 }
 EXPORT_SYMBOL(snd_hax_reg_access);
 
+
+static bool calc_checksum(unsigned int a, unsigned int b, unsigned int c)
+{
+	/* 
+	unsigned char chksum = 0;
+	chksum = ~((a & 0xff) + (b & 0xff));
+	if (chksum == (c & 0xff)) {
+		return true;
+	} else {
+		return false;
+	}
+	*/
+	return true; // Hack to always return true
+}
+
 static ssize_t cam_mic_gain_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
