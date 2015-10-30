@@ -37,7 +37,12 @@ static bool gpio_overide = false;
 #include <linux/input/doubletap2wake.h>
 #endif
 #endif
+
 #include <asm/system_info.h>
+
+#ifdef CONFIG_PWRKEY_SUSPEND
+#include <linux/qpnp/power-on.h>
+#endif
 
 #include "mdss_dsi.h"
 
@@ -253,6 +258,12 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
 #endif
+
+#ifdef CONFIG_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
+#endif
+
 
 	if (pdata == NULL) {
 		pr_err("%s: Invalid input data\n", __func__);
@@ -514,8 +525,13 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		mdss_dsi_panel_cmds_send(ctrl, &local_ctrl->on_cmds);
 	mutex_unlock(&panel_cmd_mutex);
 
-	pdata->panel_info.blank_state = MDSS_PANEL_BLANK_UNBLANK;
-	pr_debug("%s:-\n", __func__);
+
+#ifdef CONFIG_PWRKEY_SUSPEND
+	pwrkey_pressed = false;	
+#endif
+		
+	pr_info("%s\n", __func__);
+
 	return 0;
 }
 
@@ -534,6 +550,12 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
 #endif
+
+#ifdef CONFIG_PWRKEY_SUSPEND
+	if (pwrkey_pressed)
+		prevent_sleep = false;
+#endif
+
 
 	if (pdata == NULL) {
 		pr_err("%s: Invalid input data\n", __func__);
