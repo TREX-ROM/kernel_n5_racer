@@ -57,7 +57,6 @@ MODULE_LICENSE("GPLv2");
 /* Tuneables */
 #define S2W_DEBUG		0
 #define S2W_DEFAULT		0
-#define S2W_S2SONLY_DEFAULT	0
 #define S2W_PWRKEY_DUR          60
 
 #ifdef CONFIG_MACH_MSM8974_HAMMERHEAD
@@ -67,7 +66,6 @@ MODULE_LICENSE("GPLv2");
 #define S2W_Y_LIMIT             S2W_Y_MAX-130
 #define S2W_X_B1                400
 #define S2W_X_B2                700
-
 #define S2W_X_FINAL             275
 #define S2W_Y_NEXT              180
 #else
@@ -96,7 +94,6 @@ extern void set_vibrate(int value);
 int vib_strength = VIB_STRENGTH;
 
 /* Resources */
-
 int s2w_switch = S2W_DEFAULT;
 static int s2s_switch = S2W_DEFAULT;
 static int touch_x = 0, touch_y = 0;
@@ -278,7 +275,6 @@ static void detect_sweep2wake_h(int x, int y, bool st, bool wake)
                 x, y, (single_touch) ? "true" : "false");
 #endif
 	//left->right
-
 	if (firstx < 510 && single_touch &&
 		((wake && (s2w_switch & SWEEP_RIGHT)) || (!wake && (s2s_switch & SWEEP_RIGHT)))) {
 		prevx = 0;
@@ -498,7 +494,6 @@ static ssize_t s2w_sweep2wake_show(struct device *dev,
 static ssize_t s2w_sweep2wake_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-
 	sscanf(buf, "%d ", &s2w_switch);
 	if (s2w_switch < 0 || s2w_switch > 15)
 		s2w_switch = 15;
@@ -512,7 +507,6 @@ static ssize_t s2w_sweep2wake_dump(struct device *dev,
 
 static DEVICE_ATTR(sweep2wake, (S_IWUSR|S_IRUGO),
 	s2w_sweep2wake_show, s2w_sweep2wake_dump);
-
 
 static ssize_t sweep2sleep_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -668,12 +662,11 @@ static int __init sweep2wake_init(void)
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for sweep2wake\n", __func__);
 	}
-
 	rc = sysfs_create_file(android_touch_kobj, &dev_attr_sweep2sleep.attr);
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for sweep2sleep\n", __func__);
 	}
->	rc = sysfs_create_file(android_touch_kobj, &dev_attr_sweep2wake_version.attr);
+	rc = sysfs_create_file(android_touch_kobj, &dev_attr_sweep2wake_version.attr);
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for sweep2wake_version\n", __func__);
 	}
@@ -711,4 +704,3 @@ static void __exit sweep2wake_exit(void)
 
 module_init(sweep2wake_init);
 module_exit(sweep2wake_exit);
-
