@@ -144,6 +144,7 @@ static void new_touch(int x, int y) {
 	touch_nr++;
 }
 
+
 /* Doubletap2wake main function */
 static void detect_doubletap2wake(int x, int y, bool st)
 {
