@@ -30,6 +30,7 @@ static bool gpio_overide = false;
 #include <linux/ctype.h>
 #endif
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#include <linux/input/prevent_sleep.h>
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
 #include <linux/input/sweep2wake.h>
 #endif
@@ -279,6 +280,8 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
+	if (prevent_sleep && in_phone_call)
+		prevent_sleep = false;
 #endif
 
 #ifdef CONFIG_PWRKEY_SUSPEND
@@ -668,6 +671,8 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 #if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
 #endif
+	if (prevent_sleep && in_phone_call)
+		prevent_sleep = false;
 #endif
 
 #ifdef CONFIG_PWRKEY_SUSPEND
