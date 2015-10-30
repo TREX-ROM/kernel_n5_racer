@@ -1070,6 +1070,4 @@ config TOUCHSCREEN_PREVENT_SLEEP
 	help
 	  This disables the sleep function of modified touchscreen drivers.
 
-source "drivers/input/touchscreen/gt9xx/Kconfig"
-
 endif
