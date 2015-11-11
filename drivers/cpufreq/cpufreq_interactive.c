@@ -332,7 +332,9 @@ static void cpufreq_interactive_timer(unsigned long data)
 	boosted = boost_val || now < boostpulse_endtime;
 
 	if (cpu_load >= go_hispeed_load || boosted) {
-		if (pcpu->target_freq < hispeed_freq) {
+
+		if (pcpu->policy->cur < hispeed_freq) {
+
 			new_freq = hispeed_freq;
 		} else {
 			new_freq = choose_freq(pcpu, loadadjfreq);
@@ -344,9 +346,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 		new_freq = choose_freq(pcpu, loadadjfreq);
 	}
 
-	if (pcpu->target_freq >= hispeed_freq &&
-	    new_freq > pcpu->target_freq &&
-	    now - pcpu->hispeed_validate_time < above_hispeed_delay_val) {
+	if (pcpu->policy->cur >= hispeed_freq &&
+	    new_freq > pcpu->policy->cur &&
+	    now - pcpu->hispeed_validate_time <
+	    freq_to_above_hispeed_delay(pcpu->policy->cur)) {
+
 		trace_cpufreq_interactive_notyet(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
