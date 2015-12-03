@@ -1,5 +1,5 @@
-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- *
+
+/* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
  * only version 2 as published by the Free Software Foundation.
@@ -8,7 +8,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
  */
 
 #ifndef _MSM_VIDC_INTERNAL_H_
@@ -20,6 +19,8 @@
 #include <linux/types.h>
 #include <linux/completion.h>
 #include <linux/wait.h>
+#include <linux/workqueue.h>
+#include <linux/pm_qos.h>
 #include <mach/msm_bus.h>
 #include <mach/msm_bus_board.h>
 #include <mach/ocmem.h>
@@ -243,6 +244,7 @@ struct msm_vidc_inst {
 	bool map_output_buffer;
 	atomic_t get_seq_hdr_cnt;
 	struct v4l2_ctrl **ctrls;
+	struct pm_qos_request pm_qos;
 };
 
 extern struct msm_vidc_drv *vidc_driver;
