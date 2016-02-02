@@ -911,11 +911,7 @@ static int ngd_slim_rx_msgq_thread(void *data)
 
 	while (!kthread_should_stop()) {
 		set_current_state(TASK_INTERRUPTIBLE);
-		ret = wait_for_completion_interruptible(notify);
-		if (ret) {
-			dev_err(dev->dev, "rx thread wait err:%d", ret);
-			continue;
-		}
+		wait_for_completion_interruptible(notify);
 		/* 1 irq notification per message */
 		if (dev->use_rx_msgqs != MSM_MSGQ_ENABLED) {
 			msm_slim_rx_dequeue(dev, (u8 *)buffer);
@@ -950,18 +946,26 @@ static void ngd_laddr_lookup(struct work_struct *work)
 		container_of(work, struct msm_slim_ctrl, slave_notify);
 	struct slim_controller *ctrl = &dev->ctrl;
 	struct slim_device *sbdev;
-	int i;
-	mutex_lock(&ctrl->m_ctrl);
-	list_for_each_entry(sbdev, &ctrl->devs, dev_list) {
-		int ret = 0;
-		mutex_unlock(&ctrl->m_ctrl);
-		for (i = 0; i < LADDR_RETRY; i++) {
-			ret = slim_get_logical_addr(sbdev, sbdev->e_addr,
-					6, &sbdev->laddr);
-			if (!ret)
-				break;
-			else /* time for ADSP to assign LA */
-				msleep(20);
+
+	struct list_head *pos, *next;
+	int ret, i = 0;
+	while (!kthread_should_stop()) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		wait_for_completion_interruptible(&dev->qmi.slave_notify);
+		/* Probe devices for first notification */
+		if (!i) {
+			i++;
+			dev->err = 0;
+			if (dev->dev->of_node)
+				of_register_slim_devices(&dev->ctrl);
+
+			/*
+			 * Add devices registered with board-info now that
+			 * controller is up
+			 */
+			slim_ctrl_add_boarddevs(&dev->ctrl);
+		} else {
+			slim_framer_booted(ctrl);
 		}
 		mutex_lock(&ctrl->m_ctrl);
 	}
