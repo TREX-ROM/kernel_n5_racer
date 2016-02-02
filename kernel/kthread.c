@@ -378,6 +378,20 @@ repeat:
 }
 EXPORT_SYMBOL_GPL(kthread_worker_fn);
 
+
+/* insert @work before @pos in @worker */
+static void insert_kthread_work(struct kthread_worker *worker,
+			       struct kthread_work *work,
+			       struct list_head *pos)
+{
+	lockdep_assert_held(&worker->lock);
+	list_add_tail(&work->node, pos);
+	work->queue_seq++;
+
+	if (likely(worker->task))
+		wake_up_process(worker->task);
+}
+
 /**
  * queue_kthread_work - queue a kthread_work
  * @worker: target kthread_worker
@@ -424,17 +438,7 @@ void flush_kthread_work(struct kthread_work *work)
 	 */
 	smp_mb__after_atomic_inc();
 
-	/* A - B <= 0 tests whether B is in front of A regardless of overflow */
-	wait_event(work->done, seq - work->done_seq <= 0);
-	atomic_dec(&work->flushing);
 
-	/*
-	 * rmb flush-b1 paired with worker-b0, to make sure our caller
-	 * sees every change made by work->func().
-	 */
-	smp_mb__after_atomic_dec();
-}
-EXPORT_SYMBOL_GPL(flush_kthread_work);
 
 struct kthread_flush_work {
 	struct kthread_work	work;
