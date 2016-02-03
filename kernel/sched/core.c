@@ -5369,18 +5369,12 @@ fail:
 
 		mnd.src_cpu = src_cpu;
 		mnd.dest_cpu = dest_cpu;
-
-		if (sysctl_sched_ravg_window)
-			mnd.load = div64_u64((u64)p->se.ravg.demand * 100,
-				(u64)(sysctl_sched_ravg_window));
-		else
-			mnd.load = 0;
+		mnd.load = pct_task_load(p);
 		atomic_notifier_call_chain(&migration_notifier_head,
 					   0, (void *)&mnd);
 	}
 	return ret;
 }
-
 /*
  * migration_cpu_stop - this will be executed by a highprio stopper thread
  * and performs thread migration by bumping thread off CPU then

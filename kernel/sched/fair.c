@@ -3693,10 +3693,7 @@ static int move_one_task(struct lb_env *env, int *total_run_moved)
 		 * stats here rather than inside move_task().
 		 */
 		schedstat_inc(env->sd, lb_gained[env->idle]);
-
-		if (sysctl_sched_ravg_window)
-			*total_run_moved += div64_u64((u64)p->se.ravg.demand *
-					100, (u64)(sysctl_sched_ravg_window));
+		per_cpu(dbs_boost_load_moved, env->dst_cpu) += pct_task_load(p);
 
 		return 1;
 	}
@@ -3756,10 +3753,9 @@ static int move_tasks(struct lb_env *env, int *total_run_moved)
 		move_task(p, env);
 		pulled++;
 
-		env->load_move -= load;
-		if (sysctl_sched_ravg_window)
-			*total_run_moved += div64_u64((u64)p->se.ravg.demand *
-					100, (u64)(sysctl_sched_ravg_window));
+		per_cpu(dbs_boost_load_moved, env->dst_cpu) += pct_task_load(p);
+		env->imbalance -= load;
+
 
 #ifdef CONFIG_PREEMPT
 		/*
