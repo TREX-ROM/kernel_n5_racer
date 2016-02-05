@@ -283,9 +283,10 @@ static int __cpuinit msm_cpufreq_cpu_callback(struct notifier_block *nfb,
 			return NOTIFY_BAD;
 		rc = clk_prepare(cpu_clk[cpu]);
 
-		if (rc < 0)
+		if (rc < 0) {
+			clk_unprepare(l2_clk);
 			return NOTIFY_BAD;
-
+		}
 		update_l2_bw(&cpu);
 		break;
 	case CPU_STARTING:
@@ -294,9 +295,10 @@ static int __cpuinit msm_cpufreq_cpu_callback(struct notifier_block *nfb,
 			return NOTIFY_BAD;
 		rc = clk_enable(cpu_clk[cpu]);
 
-		if (rc < 0)
+		if (rc) {
+			clk_disable(l2_clk);
 			return NOTIFY_BAD;
-
+		}
 		break;
 	default:
 		break;
@@ -331,27 +333,6 @@ static int msm_cpufreq_resume(void)
 		per_cpu(cpufreq_suspend, cpu).device_suspended = 0;
 	}
 
-	/*
-	 * Freq request might be rejected during suspend, resulting
-	 * in policy->cur violating min/max constraint.
-	 * Correct the frequency as soon as possible.
-	 */
-	get_online_cpus();
-	for_each_online_cpu(cpu) {
-		ret = cpufreq_get_policy(&policy, cpu);
-		if (ret)
-			continue;
-		if (policy.cur <= policy.max && policy.cur >= policy.min)
-			continue;
-		ret = cpufreq_update_policy(cpu);
-		if (ret)
-			pr_err("cpufreq: Current frequency violates policy min/max for CPU%d\n",
-			       cpu);
-		else
-			pr_debug("cpufreq: Frequency violation fixed for CPU%d\n",
-				cpu);
-	}
-	put_online_cpus();
 
 	return NOTIFY_DONE;
 }
@@ -370,6 +351,7 @@ static int msm_cpufreq_pm_event(struct notifier_block *this,
 		return NOTIFY_DONE;
 	}
 }
+
 
 static struct notifier_block msm_cpufreq_pm_notifier = {
 	.notifier_call = msm_cpufreq_pm_event,
@@ -519,6 +501,7 @@ static int __init msm_cpufreq_register(void)
 	}
 
 	msm_cpufreq_wq = alloc_workqueue("msm-cpufreq", WQ_HIGHPRI, 0);
+	register_pm_notifier(&msm_cpufreq_pm_notifier);
 	return cpufreq_register_driver(&msm_cpufreq_driver);
 }
 
