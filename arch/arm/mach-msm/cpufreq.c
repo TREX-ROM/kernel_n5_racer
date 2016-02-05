@@ -261,7 +261,9 @@ static int __cpuinit msm_cpufreq_cpu_callback(struct notifier_block *nfb,
 	int rc;
 
 	/* Fail hotplug until this driver can get CPU clocks */
-	if (!hotplug_ready)
+
+	if (!cpu_clk[0])
+
 		return NOTIFY_BAD;
 
 	switch (action & ~CPU_TASKS_FROZEN) {
@@ -523,11 +525,11 @@ static int __init msm_cpufreq_register(void)
 	}
 
 	msm_cpufreq_wq = alloc_workqueue("msm-cpufreq", WQ_HIGHPRI, 0);
-	register_pm_notifier(&msm_cpufreq_pm_notifier);
 	return cpufreq_register_driver(&msm_cpufreq_driver);
 }
 
-subsys_initcall(msm_cpufreq_register);
+device_initcall(msm_cpufreq_register);
+
 
 static int __init msm_cpufreq_early_register(void)
 {
