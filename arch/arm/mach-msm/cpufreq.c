@@ -38,7 +38,6 @@ static struct clk *cpu_clk[NR_CPUS];
 static struct clk *l2_clk;
 static struct cpufreq_frequency_table *freq_table;
 static unsigned int *l2_khz;
-static bool is_sync;
 static unsigned long *mem_bw;
 static bool hotplug_ready;
 
@@ -195,23 +194,22 @@ static int __cpuinit msm_cpufreq_init(struct cpufreq_policy *policy)
 	table = cpufreq_frequency_get_table(policy->cpu);
 	if (table == NULL)
 		return -ENODEV;
-	/*
-	 * In some SoC, cpu cores' frequencies can not
-	 * be changed independently. Each cpu is bound to
-	 * same frequency. Hence set the cpumask to all cpu.
+
+ 	/*
+	 * In some SoC, some cores are clocked by same source, and their
+	 * frequencies can not be changed independently. Find all other
+	 * CPUs that share same clock, and mark them as controlled by
+	 * same policy.
 	 */
-	if (is_sync)
-		cpumask_setall(policy->cpus);
+	for_each_possible_cpu(cpu)
+		if (cpu_clk[cpu] == cpu_clk[policy->cpu])
+			cpumask_set_cpu(cpu, policy->cpus);
 
 
 	cpu_work = &per_cpu(cpufreq_work, policy->cpu);
 	INIT_WORK(&cpu_work->work, set_cpu_work);
 	init_completion(&cpu_work->complete);
 
-
-	/* synchronous cpus share the same policy */
-	if (!cpu_clk[policy->cpu])
-		return 0;
 
 	if (cpufreq_frequency_table_cpuinfo(policy, table)) {
 #ifdef CONFIG_MSM_CPU_FREQ_SET_MIN_MAX
@@ -477,10 +475,6 @@ static int __init msm_cpufreq_probe(struct platform_device *pdev)
 			return PTR_ERR(c);
 		cpu_clk[cpu] = c;
 	}
-
-
-	if (!cpu_clk[0])
-		return -ENODEV;
 
 	hotplug_ready = true;
 
