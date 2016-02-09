@@ -194,7 +194,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= $(SUBARCH)
 
-CROSS_COMPILE ?= /home/ra/android/UBERTC-arm-eabi-6/bin/arm-eabi-
+CROSS_COMPILE ?= /home/ra/toolchains/UBERTC-arm-eabi-6/bin/arm-eabi-
 
 
 # Architecture as present in compile.h
