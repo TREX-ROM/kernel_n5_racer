@@ -13,7 +13,7 @@
  *
  */
 
-#include <linux/earlysuspend2.h>
+#include <linux/earlysuspend.h>
 #include <linux/workqueue.h>
 #include <linux/cpu.h>
 #include <linux/module.h>
@@ -25,10 +25,10 @@
 
 extern uint32_t maxscroff;
 extern uint32_t maxscroff_freq;
+static int limit_set = 0;
 
-
-#ifdef CONFIG_HAS_EARLYSUSPEND2
-static void __cpuinit msm_sleeper_early_suspend(struct early_suspend2 *h)
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void __cpuinit msm_sleeper_early_suspend(struct early_suspend *h)
 {
 	int cpu;
 	int i;
@@ -38,6 +38,7 @@ static void __cpuinit msm_sleeper_early_suspend(struct early_suspend2 *h)
 		msm_cpufreq_set_freq_limits(cpu, MSM_CPUFREQ_NO_LIMIT, maxscroff_freq);
 		pr_info("Limit max frequency to: %d\n", maxscroff_freq);
 	}
+	limit_set = 1;
 
 	for (i = 1; i < num_cores; i++) {
 		if (cpu_online(i))
@@ -48,7 +49,7 @@ static void __cpuinit msm_sleeper_early_suspend(struct early_suspend2 *h)
 	return; 
 }
 
-static void __cpuinit msm_sleeper_late_resume(struct early_suspend2 *h)
+static void __cpuinit msm_sleeper_late_resume(struct early_suspend *h)
 {
 	int cpu;
 	int i;
@@ -58,17 +59,12 @@ static void __cpuinit msm_sleeper_late_resume(struct early_suspend2 *h)
 		msm_cpufreq_set_freq_limits(cpu, MSM_CPUFREQ_NO_LIMIT, MSM_CPUFREQ_NO_LIMIT);
 		pr_info("Restore max frequency to %d\n", MSM_CPUFREQ_NO_LIMIT);
 	}
-
-	for (i = 1; i < num_cores; i++) {
-		if (!cpu_online(i))
-			cpu_up(i);
-	}
-
+	limit_set = 0;
 	return; 
 }
 
-static struct early_suspend2 msm_sleeper_early_suspend_driver = {
-	.level = EARLY_SUSPEND2_LEVEL_BLANK_SCREEN + 10,
+static struct early_suspend msm_sleeper_early_suspend_driver = {
+	.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 10,
 	.suspend = msm_sleeper_early_suspend,
 	.resume = msm_sleeper_late_resume,
 };
@@ -80,8 +76,8 @@ static int __init msm_sleeper_init(void)
 		 MSM_SLEEPER_MAJOR_VERSION,
 		 MSM_SLEEPER_MINOR_VERSION);
 
-#ifdef CONFIG_HAS_EARLYSUSPEND2
-		register_early_suspend2(&msm_sleeper_early_suspend_driver);
+#ifdef CONFIG_HAS_EARLYSUSPEND
+		register_early_suspend(&msm_sleeper_early_suspend_driver);
 #endif
 	return 0;
 }
