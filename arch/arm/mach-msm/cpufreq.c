@@ -192,16 +192,15 @@ static int __cpuinit msm_cpufreq_init(struct cpufreq_policy *policy)
 	struct cpufreq_frequency_table *table = freq_table;
 	struct cpufreq_work_struct *cpu_work = NULL;
 	int cpu;
-
- 	/*
-	 * In some SoC, some cores are clocked by same source, and their
-	 * frequencies can not be changed independently. Find all other
-	 * CPUs that share same clock, and mark them as controlled by
-	 * same policy.
+	table = cpufreq_frequency_get_table(policy->cpu);
+	if (table == NULL)
+		return -ENODEV;
+	/*
+	 * In some SoC, cpu cores' frequencies can not
+	 * be changed independently. Each cpu is bound to
+	 * same frequency. Hence set the cpumask to all cpu.
 	 */
-
-	if (cpu_is_msm8625() || cpu_is_msm8625q() || cpu_is_msm8226()
-		|| cpu_is_msm8610() || is_sync)
+	if (is_sync)
 		cpumask_setall(policy->cpus);
 
 
