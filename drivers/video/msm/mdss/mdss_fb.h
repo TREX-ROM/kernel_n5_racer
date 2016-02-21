@@ -82,6 +82,18 @@ struct disp_info_type_suspend {
 	int panel_power_state;
 };
 
+
+struct disp_info_notify {
+	int type;
+	struct timer_list timer;
+	struct completion comp;
+	struct mutex lock;
+	int value;
+	int is_suspend;
+	int ref_count;
+	bool init_done;
+};
+
 struct msm_sync_pt_data {
 	char *fence_name;
 	u32 acq_fen_cnt;
