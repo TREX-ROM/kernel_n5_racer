@@ -924,11 +924,9 @@ static void __overlay_pipe_cleanup(struct msm_fb_data_type *mfd,
 {
 	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
 	struct mdss_mdp_data *buf, *tmpbuf;
-
 	list_for_each_entry_safe(buf, tmpbuf, &pipe->buf_queue, pipe_list) {
 		__pipe_buf_mark_cleanup(mfd, buf);
 		list_move(&buf->buf_list, &mdp5_data->bufs_freelist);
-
 		/*
 		 * in case of secure UI, the buffer needs to be released as
 		 * soon as session is closed.
@@ -994,7 +992,7 @@ static void mdss_mdp_overlay_cleanup(struct msm_fb_data_type *mfd,
 		list_del_init(&pipe->list);
 		if (recovery_mode)
 			mdss_mdp_mixer_pipe_unstage(pipe);
-		mdss_mdp_pipe_destroy(pipe);
+		__overlay_pipe_cleanup(mfd, pipe);
 	}
 	mutex_unlock(&mdp5_data->list_lock);
 }
