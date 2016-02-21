@@ -37,47 +37,17 @@
 
 static struct pm_qos_request mdss_dsi_pm_qos_request;
 
-static void mdss_dsi_pm_qos_add_request(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+static void mdss_dsi_pm_qos_add_request(void)
 {
-	struct irq_info *irq_info;
-
-	if (!ctrl_pdata)
-		return;
-
-	irq_info = ctrl_pdata->dsi_hw->irq_info;
-
-	if (!irq_info)
-		return;
-
-	mutex_lock(&ctrl_pdata->pm_qos_lock);
-	if (!ctrl_pdata->pm_qos_req_cnt) {
-		pr_debug("%s: add request irq\n", __func__);
-
-		mdss_dsi_pm_qos_request.type = PM_QOS_REQ_AFFINE_IRQ;
-		mdss_dsi_pm_qos_request.irq = irq_info->irq;
-		pm_qos_add_request(&mdss_dsi_pm_qos_request,
-			PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
-	}
-	ctrl_pdata->pm_qos_req_cnt++;
-	mutex_unlock(&ctrl_pdata->pm_qos_lock);
+	pr_debug("%s: add request", __func__);
+	pm_qos_add_request(&mdss_dsi_pm_qos_request, PM_QOS_CPU_DMA_LATENCY,
+			PM_QOS_DEFAULT_VALUE);
 }
 
-static void mdss_dsi_pm_qos_remove_request(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+static void mdss_dsi_pm_qos_remove_request(void)
 {
-	if (!ctrl_pdata)
-		return;
-
-	mutex_lock(&ctrl_pdata->pm_qos_lock);
-	if (ctrl_pdata->pm_qos_req_cnt) {
-		ctrl_pdata->pm_qos_req_cnt--;
-		if (!ctrl_pdata->pm_qos_req_cnt) {
-			pr_debug("%s: remove request", __func__);
-			pm_qos_remove_request(&mdss_dsi_pm_qos_request);
-		}
-	} else {
-		pr_warn("%s: unbalanced pm_qos ref count\n", __func__);
-	}
-	mutex_unlock(&ctrl_pdata->pm_qos_lock);
+	pr_debug("%s: remove request", __func__);
+	pm_qos_remove_request(&mdss_dsi_pm_qos_request);
 }
 
 static void mdss_dsi_pm_qos_update_request(int val)
@@ -1420,10 +1390,7 @@ static int __devinit mdss_dsi_ctrl_probe(struct platform_device *pdev)
 	if (pinfo->cont_splash_enabled)
 		mdss_dsi_op_mode_config(pinfo->mipi.mode,
 				&ctrl_pdata->panel_data);
-
-	mutex_init(&ctrl_pdata->pm_qos_lock);
-	mdss_dsi_pm_qos_add_request(ctrl_pdata);
-
+	mdss_dsi_pm_qos_add_request();
 	pr_debug("%s: Dsi Ctrl->%d initialized\n", __func__, index);
 	return 0;
 
@@ -1449,9 +1416,7 @@ static int __devexit mdss_dsi_ctrl_remove(struct platform_device *pdev)
 		pr_err("%s: no driver data\n", __func__);
 		return -ENODEV;
 	}
-
-	mdss_dsi_pm_qos_remove_request(ctrl_pdata);
-
+	mdss_dsi_pm_qos_remove_request();
 	for (i = DSI_MAX_PM - 1; i >= 0; i--) {
 		if (msm_dss_config_vreg(&pdev->dev,
 				ctrl_pdata->power_data[i].vreg_config,
