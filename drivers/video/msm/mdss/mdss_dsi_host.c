@@ -1529,7 +1529,7 @@ static int mdss_dsi_mdp_busy_tout_check(struct mdss_dsi_ctrl_pdata *ctrl)
 }
 
 
-void mdss_dsi_cmd_mdp_busy(struct mdss_dsi_ctrl_pdata *ctrl)
+int mdss_dsi_cmd_mdp_busy(struct mdss_dsi_ctrl_pdata *ctrl)
 {
 	unsigned long flags;
 	int need_wait = 0;
@@ -1555,14 +1555,14 @@ void mdss_dsi_cmd_mdp_busy(struct mdss_dsi_ctrl_pdata *ctrl)
 				pr_err("%s: timeout error\n", __func__);
 				MDSS_XLOG_TOUT_HANDLER("mdp", "dsi0_ctrl",
 				"dsi0_phy", "dsi1_ctrl", "dsi1_phy", "panic");
+			rc = -ETIMEDOUT;
 			}
 		}
 	}
 
 	pr_debug("%s: %d done pid=%d\n", __func__, ctrl->ndx, current->pid);
 	MDSS_XLOG(ctrl->ndx, ctrl->mdp_busy, current->pid, XLOG_FUNC_EXIT);
-
-	return !rc ? -ETIMEDOUT : 0;
+	return rc;
 }
 
 int mdss_dsi_cmdlist_tx(struct mdss_dsi_ctrl_pdata *ctrl,
