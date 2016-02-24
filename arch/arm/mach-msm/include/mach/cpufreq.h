@@ -61,6 +61,4 @@ static inline int msm_cpufreq_set_freq_limits(
 	return -ENOSYS;
 }
 #endif
-
-
 #endif
