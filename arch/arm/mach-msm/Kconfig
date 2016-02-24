@@ -3081,4 +3081,12 @@ config ALUCARD_HOTPLUG
 	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
 
 
+config MSM_SLEEPER
+	bool "Limit max frequency and shut off cores while screen is off"
+	default y
+	help
+	  Limit max frequency and shut off cores while screen is off 
+
+
+
 endif
