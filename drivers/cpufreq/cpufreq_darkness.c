@@ -1,6 +1,7 @@
 /*
  *  drivers/cpufreq/cpufreq_darkness.c
  *
+ *
  *  Copyright (C)  2011 Samsung Electronics co. ltd
  *    ByungChang Cha <bc.cha@samsung.com>
  *
