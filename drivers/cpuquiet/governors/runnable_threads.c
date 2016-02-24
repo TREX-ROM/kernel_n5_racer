@@ -24,10 +24,8 @@
 #include <linux/slab.h>
 #include <linux/cpu.h>
 #include <linux/sched.h>
+#include "../cpuquiet.h"
 
-// from cpuquiet.c
-extern unsigned int cpq_max_cpus(void);
-extern unsigned int cpq_min_cpus(void);
 
 typedef enum {
 	DISABLED,
