@@ -298,9 +298,6 @@ static void pp_ad_init_write(struct mdss_ad_info *ad);
 static void pp_ad_input_write(struct mdss_ad_info *ad, u32 bl_lvl);
 static int mdss_mdp_ad_setup(struct msm_fb_data_type *mfd);
 static void pp_ad_cfg_lut(char __iomem *addr, u32 *data);
-static int pp_num_to_side(struct mdss_mdp_ctl *ctl, u32 num);
-static inline bool pp_sts_is_enabled(u32 sts, int side);
-static inline void pp_sts_set_split_bits(u32 *sts, u32 bits);
 static u32 last_sts, last_state;
 
 int mdss_mdp_csc_setup_data(u32 block, u32 blk_idx, u32 tbl_idx,
