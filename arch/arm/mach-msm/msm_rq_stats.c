@@ -36,6 +36,9 @@
 /* only enable on demand if needed */
 static bool load_stats_enabled = false;
 bool rq_data_init_done = false;
+/* Consider IO as busy */
+static bool io_is_busy = false;
+static bool ignore_nice = true;
 
 #define MAX_LONG_SIZE 24
 #define DEFAULT_RQ_POLL_JIFFIES 1
@@ -48,7 +51,10 @@ struct notifier_block freq_policy;
 struct cpu_load_data {
 	cputime64_t prev_cpu_idle;
 	cputime64_t prev_cpu_wall;
+	cputime64_t prev_cpu_iowait;
+	cputime64_t prev_cpu_nice;
 	unsigned int avg_load_maxfreq;
+	unsigned int samples;
 	unsigned int window_size;
 	unsigned int cur_freq;
 	unsigned int policy_max;
@@ -80,10 +86,10 @@ EXPORT_SYMBOL(get_rq_info);
 static int update_average_load(unsigned int freq, unsigned int cpu)
 {
 	int ret;
-	unsigned int idle_time, wall_time;
-	unsigned int cur_load, load_at_max_freq;
-	cputime64_t cur_wall_time, cur_idle_time;
 	struct cpu_load_data *pcpu = &per_cpu(cpuload, cpu);
+	cputime64_t cur_wall_time, cur_idle_time, cur_iowait_time;
+	unsigned int idle_time, wall_time, iowait_time;
+	unsigned int cur_load, load_at_max_freq;
 	struct cpufreq_policy policy;
 
         ret = cpufreq_get_policy(&policy, cpu);
@@ -96,7 +102,25 @@ static int update_average_load(unsigned int freq, unsigned int cpu)
 
 	idle_time = (unsigned int) (cur_idle_time - pcpu->prev_cpu_idle);
 	pcpu->prev_cpu_idle = cur_idle_time;
-	if (unlikely(wall_time <= 0 || wall_time < idle_time))
+	iowait_time = (unsigned int) (cur_iowait_time - pcpu->prev_cpu_iowait);
+	pcpu->prev_cpu_iowait = cur_iowait_time;
+
+	if (ignore_nice) {
+		u64 cur_nice;
+		unsigned long cur_nice_jiffies;
+
+		cur_nice = kcpustat_cpu(cpu).cpustat[CPUTIME_NICE] - pcpu->prev_cpu_nice;
+		cur_nice_jiffies = (unsigned long) cputime64_to_jiffies64(cur_nice);
+
+		pcpu->prev_cpu_nice = kcpustat_cpu(cpu).cpustat[CPUTIME_NICE];
+
+		idle_time += jiffies_to_usecs(cur_nice_jiffies);
+	}
+
+	if (io_is_busy && idle_time >= iowait_time)
+		idle_time -= iowait_time;
+
+	if (unlikely(!wall_time || wall_time < idle_time))
 		return 0;
 
 	cur_load = 100 * (wall_time - idle_time) / wall_time;
@@ -125,21 +149,25 @@ static int update_average_load(unsigned int freq, unsigned int cpu)
 	return 0;
 }
 
-static unsigned int report_load_at_max_freq(void)
+unsigned int report_load_at_max_freq(void)
 {
-	int cpu = 0;
+	int cpu;
 	struct cpu_load_data *pcpu;
 	unsigned int total_load = 0;
 
 	if (!rq_data_init_done)
 		return 0;
 
-	pcpu = &per_cpu(cpuload, cpu);
-	mutex_lock(&pcpu->cpu_load_mutex);
-	update_average_load(pcpu->cur_freq, cpu);
-	total_load = pcpu->avg_load_maxfreq;
-	pcpu->avg_load_maxfreq = 0;
-	mutex_unlock(&pcpu->cpu_load_mutex);
+	for_each_online_cpu(cpu) {
+		pcpu = &per_cpu(cpuload, cpu);
+		mutex_lock(&pcpu->cpu_load_mutex);
+		update_average_load(pcpu->cur_freq, cpu);
+		total_load += pcpu->avg_load_maxfreq;
+		pcpu->avg_load_maxfreq = 0;
+		mutex_unlock(&pcpu->cpu_load_mutex);
+	}
+	if (total_load > 100)
+		total_load = 100;
 
 	return total_load;
 }
@@ -159,6 +187,7 @@ static int cpufreq_transition_handler(struct notifier_block *nb,
 		for_each_cpu(j, this_cpu->related_cpus) {
 			struct cpu_load_data *pcpu = &per_cpu(cpuload, j);
 			mutex_lock(&pcpu->cpu_load_mutex);
+			update_average_load(freqs->old, freqs->cpu);
 			pcpu->cur_freq = freqs->new;
 			mutex_unlock(&pcpu->cpu_load_mutex);
 		}
@@ -196,7 +225,9 @@ static int system_suspend_handler(struct notifier_block *nb,
 	switch (val) {
 	case PM_POST_HIBERNATION:
 	case PM_POST_SUSPEND:
+	case PM_POST_RESTORE:
 		rq_info.hotplug_disabled = 0;
+		break;
 	case PM_HIBERNATION_PREPARE:
 	case PM_SUSPEND_PREPARE:
 		rq_info.hotplug_disabled = 1;
@@ -245,6 +276,7 @@ void enable_rq_load_calc(bool on)
 				pcpu->prev_cpu_idle = 0;
 				pcpu->prev_cpu_wall = 0;
 				pcpu->prev_cpu_iowait = 0;
+				pcpu->prev_cpu_nice = 0;
 				pcpu->avg_load_maxfreq = 0;
 			}
 
@@ -317,8 +349,7 @@ static void def_work_fn(struct work_struct *work)
 	rq_info.def_interval = (unsigned int) diff;
 
 	/* Notify polling threads on change of value */
-	if (rq_data_init_done)
-		sysfs_notify(rq_info.kobj, NULL, "def_timer_ms");
+	sysfs_notify(rq_info.kobj, NULL, "def_timer_ms");
 }
 
 static ssize_t run_queue_avg_show(struct kobject *kobj,
