@@ -991,11 +991,12 @@ static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime) {}
 #endif
 
 
-#ifdef CONFIG_INTELLI_HOTPLUG
+ 
 static inline unsigned int do_avg_nr_running(struct rq *rq)
 {
-
+#if defined(CONFIG_INTELLI_HOTPLUG)
 	struct nr_stats_s *nr_stats = &per_cpu(runqueue_stats, rq->cpu);
+#endif
 	unsigned int ave_nr_running = nr_stats->ave_nr_running;
 	s64 nr, deltax;
 	deltax = rq->clock_task - nr_stats->nr_last_stamp;
@@ -1010,41 +1011,39 @@ static inline unsigned int do_avg_nr_running(struct rq *rq)
 	return ave_nr_running;
 }
 
-#endif
-
 
 static inline void inc_nr_running(struct rq *rq)
 {
-#ifdef CONFIG_INTELLI_HOTPLUG
+#if defined(CONFIG_INTELLI_HOTPLUG)
 	struct nr_stats_s *nr_stats = &per_cpu(runqueue_stats, rq->cpu);
 #endif
 	sched_update_nr_prod(cpu_of(rq), rq->nr_running, true);
 
-#ifdef CONFIG_INTELLI_HOTPLUG
+#if defined(CONFIG_INTELLI_HOTPLUG) || defined(CONFIG_CPUQUIET_FRAMEWORK) 
 	write_seqcount_begin(&nr_stats->ave_seqcnt);
 	nr_stats->ave_nr_running = do_avg_nr_running(rq);
 	nr_stats->nr_last_stamp = rq->clock_task;
 #endif
 	rq->nr_running++;
-#ifdef CONFIG_INTELLI_HOTPLUG
+#if defined(CONFIG_INTELLI_HOTPLUG) || defined(CONFIG_CPUQUIET_FRAMEWORK) 
 	write_seqcount_end(&nr_stats->ave_seqcnt);
 #endif
 }
 
 static inline void dec_nr_running(struct rq *rq)
 {
-#ifdef CONFIG_INTELLI_HOTPLUG
+#if defined(CONFIG_INTELLI_HOTPLUG)
 	struct nr_stats_s *nr_stats = &per_cpu(runqueue_stats, rq->cpu);
 #endif
 	sched_update_nr_prod(cpu_of(rq), rq->nr_running, false);
 
-#ifdef CONFIG_INTELLI_HOTPLUG
+#if defined(CONFIG_INTELLI_HOTPLUG) || defined(CONFIG_CPUQUIET_FRAMEWORK) 
 	write_seqcount_begin(&nr_stats->ave_seqcnt);
 	nr_stats->ave_nr_running = do_avg_nr_running(rq);
 	nr_stats->nr_last_stamp = rq->clock_task;
 #endif
 	rq->nr_running--;
-#ifdef CONFIG_INTELLI_HOTPLUG
+#if defined(CONFIG_INTELLI_HOTPLUG) || defined(CONFIG_CPUQUIET_FRAMEWORK) 
 	write_seqcount_end(&nr_stats->ave_seqcnt);
 #endif
 }
