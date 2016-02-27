@@ -36,11 +36,10 @@ obj-$(CONFIG_FB_MSM_MDSS_HDMI_MHL_SII8334) += mhl_sii8334.o mhl_msc.o
 
 obj-$(CONFIG_FB_MSM_MDSS_WRITEBACK) += mdss_wb.o
 
-mdss-qpic-objs := mdss_qpic.o mdss_fb.o mdss_qpic_panel.o
+mdss-qpic-objs := mdss_qpic.o mdss_fb.o lcd_notify.o mdss_qpic_panel.o
 obj-$(CONFIG_FB_MSM_QPIC) += mdss-qpic.o
 obj-$(CONFIG_FB_MSM_QPIC_ILI_QVGA_PANEL) += qpic_panel_ili_qvga.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_fb.o lcd_notify.o
-
 obj-$(CONFIG_FB_MSM_MDSS_DSI_CTRL_STATUS) += mdss_dsi_status.o
 obj-$(CONFIG_FB_MSM_MDSS_TIMEOUT_DUMP) += mdss_timeout.o
 obj-$(CONFIG_MMI_PANEL_NOTIFICATIONS) += mmi_panel_notifier.o
