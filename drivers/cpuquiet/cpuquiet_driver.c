@@ -26,11 +26,13 @@
 #include <linux/cpu.h>
 #include <linux/cpuquiet.h>
 #include <linux/earlysuspend.h>
+#include <linux/rq_stats.h>
 
 static struct work_struct minmax_work;
 static struct work_struct cpu_core_state_work;
 static struct kobject *auto_sysfs_kobject;
 
+static bool enabled = false;
 static bool manual_hotplug = false;
 // core 0 is always active
 unsigned int cpu_core_state[3] = {0, 0, 0};
@@ -188,7 +190,10 @@ static ssize_t store_min_cpus(struct cpuquiet_attribute *cattr,
 {
 	int ret;
 	unsigned int n;
-	
+
+	if (!enabled)
+		return -EBUSY;	
+
 	ret = sscanf(buf, "%d", &n);
 
 	if ((ret != 1) || n < 1 || n > CONFIG_NR_CPUS)
@@ -218,7 +223,10 @@ static ssize_t store_max_cpus(struct cpuquiet_attribute *cattr,
 {
 	int ret;
 	unsigned int n;
-	
+
+	if (!enabled)
+		return -EBUSY;	
+
 	ret = sscanf(buf, "%d", &n);
 
 	if ((ret != 1) || n < 1 || n > CONFIG_NR_CPUS)
@@ -236,6 +244,9 @@ static ssize_t store_max_cpus(struct cpuquiet_attribute *cattr,
 
 static void set_manual_hotplug(unsigned int mode)
 {
+	if (!enabled)
+		return;
+
 	if (manual_hotplug == mode)
 		return;
      
@@ -266,6 +277,9 @@ static ssize_t store_manual_hotplug(struct cpuquiet_attribute *cattr,
 {
 	int ret;
 	unsigned int n;
+
+	if (!enabled)
+		return -EBUSY;
 		
 	ret = sscanf(buf, "%d", &n);
 
@@ -293,13 +307,13 @@ static void __cpuinit cpu_core_state_workfunc(struct work_struct *work)
 	}
 }
 
-static void set_cpu_core_state(unsigned int new_cpu_core_state_user[3])
+static void set_cpu_core_state(unsigned int new_cpu_core_state_user[3], bool force)
 {
 	cpu_core_state[0]=new_cpu_core_state_user[0];
 	cpu_core_state[1]=new_cpu_core_state_user[1];
 	cpu_core_state[2]=new_cpu_core_state_user[2];
 
-	if (manual_hotplug)
+	if (manual_hotplug || force)
 		schedule_work(&cpu_core_state_work);
 
 	pr_info(CPUQUIET_TAG "cpu_core_state=%u %u %u\n", cpu_core_state[0], cpu_core_state[1], cpu_core_state[2]);
@@ -321,6 +335,9 @@ static ssize_t store_cpu_core_state(struct cpuquiet_attribute *cattr,
 	unsigned int cpu_core_state_user[3] = {0, 0, 0};
 	int i = 0;
 
+	if (!enabled)
+		return -EBUSY;
+
 	ret = sscanf(buf, "%u %u %u", &cpu_core_state_user[0], &cpu_core_state_user[1],
 		&cpu_core_state_user[2]);
 
@@ -332,7 +349,7 @@ static ssize_t store_cpu_core_state(struct cpuquiet_attribute *cattr,
 			return -EINVAL;
 	}
 
-	set_cpu_core_state(cpu_core_state_user);
+	set_cpu_core_state(cpu_core_state_user, false);
 		    
 	return count;
 }
@@ -409,6 +426,52 @@ static ssize_t store_screen_off_max_cpus(struct cpuquiet_attribute *cattr,
 	return count;
 }
 
+static ssize_t show_enabled(struct cpuquiet_attribute *cattr, char *buf)
+{
+	char *out = buf;
+		
+	out += sprintf(out, "%d\n", enabled);
+
+	return out - buf;
+}
+
+
+
+static ssize_t store_enabled(struct cpuquiet_attribute *cattr,
+					const char *buf, size_t count)
+{
+	int ret;
+	unsigned int n;
+	unsigned int cpu_core_state_user[3] = {0, 0, 0};
+		    		
+	ret = sscanf(buf, "%d", &n);
+
+	if ((ret != 1) || n < 0 || n > 1)
+		return -EINVAL;
+
+	if (n != enabled) {
+		enabled = n;
+		if (!enabled) {
+			// stop governor
+			cpuquiet_device_busy();
+
+			// down all cpus
+			set_cpu_core_state(cpu_core_state_user, true);
+
+			// enable load calc for mpdecision
+			enable_rq_load_calc(true);
+		} else {
+			// disable mpdecision load calc - just burning cpu cycles
+			enable_rq_load_calc(false);
+			// start governor
+			cpuquiet_device_free();
+		}
+	}
+
+	return count;
+}
+
+CPQ_ATTRIBUTE_CUSTOM(enabled, 0644, show_enabled, store_enabled);
 CPQ_ATTRIBUTE_CUSTOM(min_cpus, 0644, show_min_cpus, store_min_cpus);
 CPQ_ATTRIBUTE_CUSTOM(max_cpus, 0644, show_max_cpus, store_max_cpus);
 CPQ_ATTRIBUTE_CUSTOM(manual_hotplug, 0644, show_manual_hotplug, store_manual_hotplug);
@@ -418,6 +481,7 @@ CPQ_ATTRIBUTE_CUSTOM(screen_off_cap, 0644, show_screen_off_cap, store_screen_off
 CPQ_ATTRIBUTE_CUSTOM(screen_off_max_cpus, 0644, show_screen_off_max_cpus, store_screen_off_max_cpus);
 
 static struct attribute *cpq_auto_attributes[] = {
+	&enabled_attr.attr,
 	&min_cpus_attr.attr,
 	&max_cpus_attr.attr,
 	&manual_hotplug_attr.attr,
@@ -505,6 +569,10 @@ int __init cpq_auto_hotplug_init(void)
 	register_early_suspend(&cpuquiet_early_suspender);
 #endif
 	
+	enabled = true;
+	// disable mpdecision load calc - just burning cpu cycles
+	enable_rq_load_calc(false);
+
 	return err;
 	
 error:
