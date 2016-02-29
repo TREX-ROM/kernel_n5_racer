@@ -32,6 +32,7 @@ struct fiops_rb_root {
 };
 #define FIOPS_RB_ROOT	(struct fiops_rb_root) { .rb = RB_ROOT}
 
+
 enum wl_prio_t {
 	IDLE_WORKLOAD = 0,
 	BE_WORKLOAD = 1,
@@ -41,14 +42,10 @@ enum wl_prio_t {
 
 struct fiops_data {
 	struct request_queue *queue;
-
 	struct fiops_rb_root service_tree[FIOPS_PRIO_NR];
-
 	unsigned int busy_queues;
 	unsigned int in_flight[2];
-
 	struct work_struct unplug_work;
-
 	unsigned int read_scale;
 	unsigned int write_scale;
 	unsigned int sync_scale;
@@ -98,6 +95,7 @@ static inline int fiops_ioc_##name(const struct fiops_ioc *ioc)	\
 
 FIOPS_IOC_FNS(on_rr);
 FIOPS_IOC_FNS(prio_changed);
+
 #undef FIOPS_IOC_FNS
 
 #define fiops_log_ioc(fiopsd, ioc, fmt, args...)	\
@@ -324,7 +322,6 @@ static u64 fiops_scaled_vios(struct fiops_data *fiopsd,
 	struct fiops_ioc *ioc, struct request *rq)
 {
 	int vios = VIOS_SCALE;
-
 	if (rq_data_dir(rq) == WRITE)
 		vios = vios * fiopsd->write_scale / fiopsd->read_scale;
 
@@ -446,6 +443,7 @@ static int fiops_dispatch_requests(struct request_queue *q, int force)
 	return 1;
 }
 
+
 static void fiops_init_prio_data(struct fiops_ioc *cic)
 {
 	struct task_struct *tsk = current;
@@ -486,11 +484,8 @@ static void fiops_init_prio_data(struct fiops_ioc *cic)
 static void fiops_insert_request(struct request_queue *q, struct request *rq)
 {
 	struct fiops_ioc *ioc = RQ_CIC(rq);
-
 	fiops_init_prio_data(ioc);
-
 	list_add_tail(&rq->queuelist, &ioc->fifo);
-
 	fiops_add_rq_rb(rq);
 }
 
@@ -618,7 +613,6 @@ static void *fiops_init_queue(struct request_queue *q)
 {
 	struct fiops_data *fiopsd;
 	int i;
-
 	fiopsd = kzalloc_node(sizeof(*fiopsd), GFP_KERNEL, q->node);
 	if (!fiopsd)
 		return NULL;
@@ -629,7 +623,6 @@ static void *fiops_init_queue(struct request_queue *q)
 		fiopsd->service_tree[i] = FIOPS_RB_ROOT;
 
 	INIT_WORK(&fiopsd->unplug_work, fiops_kick_queue);
-
 	fiopsd->read_scale = VIOS_READ_SCALE;
 	fiopsd->write_scale = VIOS_WRITE_SCALE;
 	fiopsd->sync_scale = VIOS_SYNC_SCALE;
@@ -646,12 +639,11 @@ static void fiops_init_icq(struct io_cq *icq)
 	RB_CLEAR_NODE(&ioc->rb_node);
 	INIT_LIST_HEAD(&ioc->fifo);
 	ioc->sort_list = RB_ROOT;
-
 	ioc->fiopsd = fiopsd;
-
 	ioc->pid = current->pid;
 	fiops_mark_ioc_prio_changed(ioc);
 }
+
 
 /*
  * sysfs parts below -->
@@ -713,6 +705,7 @@ static struct elv_fs_entry fiops_attrs[] = {
 	__ATTR_NULL
 };
 
+
 static struct elevator_type iosched_fiops = {
 	.ops = {
 		.elevator_merge_fn =		fiops_merge,
@@ -751,3 +744,4 @@ module_exit(fiops_exit);
 MODULE_AUTHOR("Jens Axboe, Shaohua Li <shli@kernel.org>");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("IOPS based IO scheduler");
+
