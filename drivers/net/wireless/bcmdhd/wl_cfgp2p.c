@@ -47,6 +47,10 @@
 #include <wldev_common.h>
 #include <wl_android.h>
 
+
+static const struct ether_addr ether_bcast = {{255, 255, 255, 255, 255, 255}};
+
+
 static s8 scanparambuf[WLC_IOCTL_SMLEN];
 static s8 g_mgmt_ie_buf[2048];
 static bool

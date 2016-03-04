@@ -181,10 +181,6 @@ do { \
 
 
 
-static const struct ether_addr ether_bcast = {{255, 255, 255, 255, 255, 255}};
-static const struct ether_addr ether_null = {{0, 0, 0, 0, 0, 0}};
-static const struct ether_addr ether_ipv6_mcast = {{0x33, 0x33, 0x00, 0x00, 0x00, 0x01}};
-
 #define ETHER_ISBCAST(ea)	((((const uint8 *)(ea))[0] &		\
 	                          ((const uint8 *)(ea))[1] &		\
 				  ((const uint8 *)(ea))[2] &		\
