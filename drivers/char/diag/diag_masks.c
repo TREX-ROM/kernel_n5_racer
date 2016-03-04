@@ -31,6 +31,28 @@ int diag_event_num_bytes;
 
 #define FEATURE_MASK_LEN_BYTES		2
 
+
+/* LOG CODES */
+static const uint32_t log_code_last_tbl[] = {
+	0x0,	/* EQUIP ID 0 */
+	0x18DE,	/* EQUIP ID 1 */
+	0x0,	/* EQUIP ID 2 */
+	0x0,	/* EQUIP ID 3 */
+	0x4910,	/* EQUIP ID 4 */
+	0x5420,	/* EQUIP ID 5 */
+	0x0,	/* EQUIP ID 6 */
+	0x74FF,	/* EQUIP ID 7 */
+	0x0,	/* EQUIP ID 8 */
+	0x0,	/* EQUIP ID 9 */
+	0xA38A,	/* EQUIP ID 10 */
+	0xB201,	/* EQUIP ID 11 */
+	0x0,	/* EQUIP ID 12 */
+	0xD1FF,	/* EQUIP ID 13 */
+	0x0,	/* EQUIP ID 14 */
+	0x0,	/* EQUIP ID 15 */
+};
+
+
 struct mask_info {
 	int equip_id;
 	int num_items;
