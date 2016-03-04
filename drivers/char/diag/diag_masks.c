@@ -31,6 +31,7 @@ int diag_event_num_bytes;
 
 #define FEATURE_MASK_LEN_BYTES		1
 
+
 struct mask_info {
 	int equip_id;
 	int num_items;
