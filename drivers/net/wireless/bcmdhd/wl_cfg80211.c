@@ -65,6 +65,10 @@
 #include <wl_cfgp2p.h>
 #include <wl_android.h>
 
+
+static const struct ether_addr ether_bcast = {{255, 255, 255, 255, 255, 255}};
+
+
 #ifdef PROP_TXSTATUS
 #include <dhd_wlfc.h>
 #endif
