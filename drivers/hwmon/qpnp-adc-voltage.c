@@ -31,6 +31,21 @@
 #include <linux/qpnp/qpnp-adc.h>
 #include <linux/platform_device.h>
 
+
+/**
+ * struct qpnp_vadc_scaling_ratio
+ *
+ */
+static const struct qpnp_vadc_scaling_ratio qpnp_vadc_amux_scaling_ratio[] = {
+	{1, 1},
+	{1, 3},
+	{1, 4},
+	{1, 6},
+	{1, 20},
+	{1, 8}
+};
+
+
 /* QPNP VADC register definition */
 #define QPNP_VADC_REVISION1				0x0
 #define QPNP_VADC_REVISION2				0x1
