@@ -887,18 +887,6 @@ struct qpnp_adc_amux {
 	enum qpnp_adc_calib_type		calib_type;
 };
 
-/**
- * struct qpnp_vadc_scaling_ratio
- *
- */
-static const struct qpnp_vadc_scaling_ratio qpnp_vadc_amux_scaling_ratio[] = {
-	{1, 1},
-	{1, 3},
-	{1, 4},
-	{1, 6},
-	{1, 20},
-	{1, 8}
-};
 
 /**
  * struct qpnp_vadc_scale_fn - Scaling function prototype
