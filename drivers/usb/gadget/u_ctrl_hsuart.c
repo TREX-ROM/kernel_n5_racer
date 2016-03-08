@@ -502,27 +502,6 @@ static ssize_t ghsuart_ctrl_read_stats(struct file *file, char __user *ubuf,
 	return ret;
 }
 
-static ssize_t ghsuart_ctrl_reset_stats(struct file *file,
-	const char __user *buf, size_t count, loff_t *ppos)
-{
-	struct ghsuart_ctrl_port	*port;
-	int			i;
-	unsigned long		flags;
-
-	for (i = 0; i < num_ctrl_ports; i++) {
-		port = ghsuart_ctrl_ports[i].port;
-		if (!port)
-			continue;
-
-		spin_lock_irqsave(&port->port_lock, flags);
-		port->to_host = 0;
-		port->to_modem = 0;
-		port->drp_cpkt_cnt = 0;
-		spin_unlock_irqrestore(&port->port_lock, flags);
-	}
-	return count;
-}
-
 static struct dentry	*ghsuart_ctrl_dent;
 static int ghsuart_ctrl_debugfs_init(void)
 {
