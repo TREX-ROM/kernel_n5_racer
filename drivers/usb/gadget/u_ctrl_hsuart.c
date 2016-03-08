@@ -461,46 +461,6 @@ free_ports:
 }
 
 #define DEBUG_BUF_SIZE	1024
-static ssize_t ghsuart_ctrl_read_stats(struct file *file, char __user *ubuf,
-		size_t count, loff_t *ppos)
-{
-	struct ghsuart_ctrl_port	*port;
-	char			*buf;
-	unsigned long		flags;
-	int			ret;
-	int			i;
-	int			temp = 0;
-
-	buf = kzalloc(sizeof(char) * DEBUG_BUF_SIZE, GFP_KERNEL);
-	if (!buf)
-		return -ENOMEM;
-
-	for (i = 0; i < num_ctrl_ports; i++) {
-		port = ghsuart_ctrl_ports[i].port;
-		if (!port)
-			continue;
-		spin_lock_irqsave(&port->port_lock, flags);
-
-		temp += scnprintf(buf + temp, DEBUG_BUF_SIZE - temp,
-				"#PORT:%d port: %p\n"
-				"to_usbhost:    %lu\n"
-				"to_modem:      %lu\n"
-				"cpkt_drp_cnt:  %lu\n"
-				"DTR:           %s\n",
-				i, port,
-				port->to_host, port->to_modem,
-				port->drp_cpkt_cnt,
-				port->cbits_tomodem ? "HIGH" : "LOW");
-
-		spin_unlock_irqrestore(&port->port_lock, flags);
-	}
-
-	ret = simple_read_from_buffer(ubuf, count, ppos, buf, temp);
-
-	kfree(buf);
-
-	return ret;
-}
 
 static struct dentry	*ghsuart_ctrl_dent;
 static int ghsuart_ctrl_debugfs_init(void)
