@@ -1146,11 +1146,6 @@ out:
 
 #endif /* CONFIG_PGTABLE_MAPPING */
 
-/*
- * If this becomes a separate module, register zs_init() with
- * module_init(), zs_exit with module_exit(), and remove zs_initialized
-*/
-static int zs_initialized;
 
 static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
 				void *pcpu)
