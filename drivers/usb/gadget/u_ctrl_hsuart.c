@@ -523,11 +523,6 @@ static ssize_t ghsuart_ctrl_reset_stats(struct file *file,
 	return count;
 }
 
-static const struct file_operations ghsuart_ctrl_stats_ops = {
-	.read = ghsuart_ctrl_read_stats,
-	.write = ghsuart_ctrl_reset_stats,
-};
-
 static struct dentry	*ghsuart_ctrl_dent;
 static int ghsuart_ctrl_debugfs_init(void)
 {
