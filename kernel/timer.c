@@ -665,21 +665,6 @@ detach_expired_timer(struct timer_list *timer, struct tvec_base *base)
 		base->active_timers--;
 }
 
-static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
-			     bool clear_pending)
-{
-	if (!timer_pending(timer))
-		return 0;
-
-	detach_timer(timer, clear_pending);
-	if (!tbase_get_deferrable(timer->base)) {
-
-		base->active_timers--;
-		if (timer->expires == base->next_timer)
-			base->next_timer = base->timer_jiffies;
-	}
-	return 1;
-}
 
 /*
  * We are using hashed locking: holding per_cpu(tvec_bases).lock
