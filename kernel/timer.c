@@ -79,6 +79,7 @@ struct tvec_base {
 	struct timer_list *running_timer;
 	unsigned long timer_jiffies;
 	unsigned long next_timer;
+	unsigned long active_timers;
 	struct tvec_root tv1;
 	struct tvec tv2;
 	struct tvec tv3;
