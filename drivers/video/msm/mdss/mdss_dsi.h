@@ -198,17 +198,6 @@ struct dsi_clk_mnd_table {
 	u8 pclk_d;
 };
 
-static const struct dsi_clk_mnd_table mnd_table[] = {
-	{ 1, 2,  8, 1, 1, 0},
-	{ 1, 3, 12, 1, 1, 0},
-	{ 2, 2,  4, 1, 1, 0},
-	{ 2, 3,  6, 1, 1, 0},
-	{ 3, 2,  1, 3, 8, 4},
-	{ 3, 3,  4, 1, 1, 0},
-	{ 4, 2,  2, 1, 1, 0},
-	{ 4, 3,  3, 1, 1, 0},
-};
-
 struct dsi_clk_desc {
 	u32 src;
 	u32 m;
