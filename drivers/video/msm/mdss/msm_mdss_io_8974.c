@@ -28,6 +28,17 @@
 
 static struct dsi_clk_desc dsi_pclk;
 
+static const struct dsi_clk_mnd_table mnd_table[] = {
+	{ 1, 2,  8, 1, 1, 0},
+	{ 1, 3, 12, 1, 1, 0},
+	{ 2, 2,  4, 1, 1, 0},
+	{ 2, 3,  6, 1, 1, 0},
+	{ 3, 2,  1, 3, 8, 4},
+	{ 3, 3,  4, 1, 1, 0},
+	{ 4, 2,  2, 1, 1, 0},
+	{ 4, 3,  3, 1, 1, 0},
+};
+
 void mdss_dsi_phy_sw_reset(unsigned char *ctrl_base)
 {
         /* start phy sw reset */
