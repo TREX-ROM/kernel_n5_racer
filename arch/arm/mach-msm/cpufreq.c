@@ -49,6 +49,16 @@ static struct cpufreq_frequency_table *freq_table;
 #ifdef CONFIG_MSM_CPU_VOLTAGE_CONTROL
 static struct cpufreq_frequency_table *krait_freq_table;
 #endif
+
+static int devfreq_msm_cpufreq_update_bw(void)
+{
+	return 0;
+}
+static int register_devfreq_msm_cpufreq(void)
+{
+	return 0;
+}
+
 static unsigned int *l2_khz;
 static unsigned long *mem_bw;
 static bool hotplug_ready;
