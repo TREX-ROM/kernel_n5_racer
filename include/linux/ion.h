@@ -347,12 +347,16 @@ static inline int ion_handle_get_flags(struct ion_client *client,
  *
  * Provided by userspace as an argument to the ioctl
  */
-struct ion_allocation_data {
-	size_t len;
-	size_t align;
-	unsigned int heap_mask;
-	unsigned int flags;
-	ion_user_handle_t handle;
+ struct ion_allocation_data {
+ 	size_t len;
+ 	size_t align;
+#ifdef __KERNEL__	
+ 	unsigned int heap_mask;
+#else
+	unsigned int heap_id_mask;
+#endif	
+ 	unsigned int flags;
+ 	ion_user_handle_t handle;
 };
 
 /**
